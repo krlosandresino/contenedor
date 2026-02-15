@@ -5,61 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Revisión de carga</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
     <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
     
     <style>
+        /* ESTILOS ORIGINALES RECUPERADOS */
         body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 95%; max-width: 1100px; }
         .dashboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
         .stat-card { background: #fff; border: 1px solid #e1e4e8; padding: 15px; border-radius: 10px; text-align: center; }
         .stat-number { display: block; font-size: 24px; font-weight: bold; color: #2c3e50; }
         .stat-label { font-size: 12px; color: #7f8c8d; text-transform: uppercase; }
+        
         .upload-section { background: #f8f9fa; padding: 15px; border-radius: 8px; border: 2px dashed #3498db; margin-bottom: 20px; text-align: center; }
+        .admin-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        
+        /* BOTONES CON COLORES ORIGINALES */
+        .btn-confirm { background-color: #34495e; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-clear { background-color: #e74c3c; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-download { background-color: #27ae60; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
-        .btn-clear { background-color: #e74c3c; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        
         input[type="text"], input[type="password"] { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #bdc3c7; border-radius: 6px; font-size: 18px; box-sizing: border-box; }
-        #nombreResponsable { text-transform: uppercase; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 400px; text-align: center; }
-        .btn-confirm { background: #3498db; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 15px; }
+        
+        /* TABLAS Y MODALES */
         .table-container { width: 100%; overflow-x: auto; margin-top: 10px; max-height: 500px; }
         table { width: 100%; border-collapse: collapse; }
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
         th { background-color: #3498db; color: white; position: sticky; top: 0; }
+        
+        /* ESTILO DE FILA MARCADA (TACHADO Y VERDE) */
         tr.checked { background-color: #e8f5e9 !important; color: #2e7d32; }
         tr.checked td { text-decoration: line-through; opacity: 0.6; }
-        .btn-check { background-color: #2ecc71; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+        
+        .btn-check { background-color: #2ecc71; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .btn-check.undo { background-color: #e74c3c; }
-        .admin-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 400px; text-align: center; }
     </style>
 </head>
 <body>
-
-<div id="modalPersona" class="modal-overlay">
-    <div class="modal-content">
-        <h3>👤 Identificación</h3>
-        <p>Responsable para el <b>Pallet <span id="modalPalletId"></span></b>:</p>
-        <input type="text" id="nombreResponsable" placeholder="Escriba su nombre y pulse Enter...">
-        <button class="btn-confirm" onclick="confirmarResponsable()">Continuar</button>
-    </div>
-</div>
 
 <div id="modalAdmin" class="modal-overlay">
     <div class="modal-content">
         <h3>🔐 Acceso Administrador</h3>
         <p id="adminModalMsg">Solo personal autorizado.</p>
-        <input type="text" id="adminUser" placeholder="Usuario">
-        <input type="password" id="adminPass" placeholder="Contraseña">
-        <button class="btn-confirm" onclick="verificarAdmin()">Verificar Acceso</button>
+        <input type="text" id="adminUser" placeholder="Usuario" autocomplete="off">
+        <input type="password" id="adminPass" placeholder="Contraseña" autocomplete="new-password">
+        <button class="btn-confirm" style="width:100%; margin-top:15px;" onclick="verificarAdmin()">Verificar Acceso</button>
         <button onclick="cerrarModalAdmin()" style="background:none; border:none; color:gray; cursor:pointer; margin-top:10px;">Cancelar</button>
+    </div>
+</div>
+
+<div id="modalPersona" class="modal-overlay">
+    <div class="modal-content">
+        <h3>👤 Identificación</h3>
+        <p>Responsable para el <b>Pallet <span id="modalPalletId"></span></b>:</p>
+        <input type="text" id="nombreResponsable" placeholder="Escriba su nombre y pulse Enter..." autocomplete="off" style="text-transform: uppercase;">
+        <button class="btn-confirm" style="width:100%; margin-top:15px;" onclick="confirmarResponsable()">Continuar</button>
     </div>
 </div>
 
 <div class="container">
     <h2>Contenedor de carga</h2>
-    <div class="dashboard" id="dashboard">
+    <div class="dashboard">
         <div class="stat-card"><span class="stat-number" id="totalPallets">0</span><span class="stat-label">Total Pallets</span></div>
         <div class="stat-card"><span class="stat-number" id="pendingPallets" style="color: #e67e22;">0</span><span class="stat-label">Faltan Buscar</span></div>
         <div class="stat-card"><span class="stat-number" id="totalItems">0</span><span class="stat-label">Vistos Global</span></div>
@@ -68,13 +77,13 @@
     <div class="upload-section">
         <div class="admin-controls">
             <input type="file" id="fileInput" accept=".xlsx, .xls" style="display:none">
-            <button class="btn-confirm" style="background-color: #34495e; margin:0;" onclick="abrirLoginAdmin('UPLOAD')">📂 Subir archivo excel</button>
-            <button class="btn-clear" style="margin:0;" onclick="abrirLoginAdmin('CLEAR')">🗑️ Limpiar base de Datos</button>
+            <button class="btn-confirm" onclick="abrirLoginAdmin('UPLOAD')">📂 Subir archivo excel</button>
+            <button class="btn-clear" onclick="abrirLoginAdmin('CLEAR')">🗑️ Limpiar base de Datos</button>
         </div>
-        <button id="downloadBtn" class="btn-download" onclick="exportarReporte()">📥 Descargar Reporte Final</button>
+        <button class="btn-download" onclick="exportarReporte()">📥 Descargar Reporte Final</button>
     </div>
 
-    <input type="text" id="palletInput" placeholder="Escanee número de Pallet...">
+    <input type="text" id="palletInput" placeholder="Escanee número de Pallet..." autocomplete="off">
 
     <div id="resultsArea" style="display: none;">
         <h3 id="currentPalletTitle"></h3>
@@ -98,15 +107,16 @@
         appId: "1:517861302737:web:2c6e7b97062dbf7e6900f0"
     };
 
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
     let dbGlobal = [];
     let headers = [];
     let palletTemporal = "";
     let auditorActual = "";
-    let adminAction = ""; // Determina si se va a subir o a limpiar
+    let adminAction = "";
 
+    // ESCUCHA DE DATOS
     database.ref('carga').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -116,60 +126,42 @@
             prepararCabeceras();
             if (palletTemporal) renderizarPallet(palletTemporal, auditorActual);
         } else {
-            // Si la DB está vacía
             dbGlobal = [];
             headers = [];
             actualizarContadores();
-            document.getElementById('tableBody').innerHTML = "";
             document.getElementById('resultsArea').style.display = 'none';
         }
     });
 
-    // --- LÓGICA DE ADMIN ---
+    // LÓGICA DE ADMIN Y TECLADO
     function abrirLoginAdmin(accion) {
         adminAction = accion;
-        document.getElementById('adminModalMsg').innerText = accion === 'CLEAR' ? 
-            "⚠️ Estás por BORRAR todos los datos." : "Solo personal autorizado para subir datos.";
+        document.getElementById('adminUser').value = "";
+        document.getElementById('adminPass').value = "";
+        document.getElementById('adminModalMsg').innerText = accion === 'CLEAR' ? "⚠️ Borrar todos los datos." : "Acceso autorizado.";
         document.getElementById('modalAdmin').style.display = 'flex';
         document.getElementById('adminUser').focus();
     }
 
     function cerrarModalAdmin() {
-        document.getElementById('modalAdmin').style.display = 'none';
         document.getElementById('adminUser').value = "";
         document.getElementById('adminPass').value = "";
+        document.getElementById('modalAdmin').style.display = 'none';
     }
 
-    const inputUser = document.getElementById('adminUser');
-    const inputPass = document.getElementById('adminPass');
-    [inputUser, inputPass].forEach(input => {
+    [document.getElementById('adminUser'), document.getElementById('adminPass')].forEach(input => {
         input.addEventListener('keydown', (e) => { if (e.key === 'Enter') verificarAdmin(); });
     });
 
     function verificarAdmin() {
-        const u = document.getElementById('adminUser').value;
-        const p = document.getElementById('adminPass').value;
-
-        if (u === "oriflame" && p === "2026") {
+        if (document.getElementById('adminUser').value === "oriflame" && document.getElementById('adminPass').value === "2026") {
             cerrarModalAdmin();
-            if (adminAction === 'UPLOAD') {
-                document.getElementById('fileInput').click();
-            } else if (adminAction === 'CLEAR') {
-                limpiarBaseDatos();
-            }
-        } else {
-            alert("Usuario o clave incorrectos.");
-        }
+            if (adminAction === 'UPLOAD') document.getElementById('fileInput').click();
+            else if (confirm("¿Borrar todo?")) database.ref('carga').remove();
+        } else { alert("Datos incorrectos"); }
     }
 
-    function limpiarBaseDatos() {
-        if (confirm("¿Estás completamente seguro de borrar TODO? Esta acción no se puede deshacer.")) {
-            database.ref('carga').remove()
-                .then(() => alert("Base de datos borrada. Todo ha vuelto a cero."))
-                .catch(err => alert("Error al borrar: " + err));
-        }
-    }
-
+    // CARGA DE EXCEL
     document.getElementById('fileInput').addEventListener('change', function(e) {
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -177,114 +169,88 @@
             const workbook = XLSX.read(data, { type: 'array' });
             const raw = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
             if (raw.length > 0) {
-                const initialHeaders = raw[0].slice(0, 6);
-                const initialItems = raw.slice(1).map((fila, index) => ({
-                    datos: fila, visto: false, auditor: "", fechaHora: "", rowId: index
+                const items = raw.slice(1).filter(f => f.length > 0).map((f, i) => ({
+                    datos: f, visto: false, auditor: "", fechaHora: "", rowId: i
                 }));
-                database.ref('carga').set({
-                    headers: initialHeaders,
-                    items: initialItems
-                }).then(() => alert("Base de datos actualizada."));
+                database.ref('carga').set({ headers: raw[0].slice(0, 6), items: items });
             }
         };
         reader.readAsArrayBuffer(e.target.files[0]);
     });
 
-    // --- FUNCIONES DE TABLA Y UI ---
-    function prepararCabeceras() {
-        if(headers.length > 0) {
-            document.getElementById('tableHeaders').innerHTML = headers.map(h => `<th>${h || ''}</th>`).join('') + '<th>Estado</th>';
-        }
-    }
-
-    document.getElementById('nombreResponsable').addEventListener('keydown', e => { if (e.key === 'Enter') confirmarResponsable(); });
-
+    // BÚSQUEDA Y RENDERIZADO
     document.getElementById('palletInput').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             const id = this.value.trim();
-            if (dbGlobal.length === 0) { alert("Sube primero un archivo maestro."); this.value=''; return; }
-            const existe = dbGlobal.some(f => String(f.datos[0]).trim() === id);
-            if (existe) {
+            if (dbGlobal.some(f => String(f.datos[0]).trim() === id)) {
                 palletTemporal = id;
                 document.getElementById('modalPalletId').innerText = id;
                 document.getElementById('modalPersona').style.display = 'flex';
                 document.getElementById('nombreResponsable').value = "";
                 setTimeout(() => document.getElementById('nombreResponsable').focus(), 150);
-            } else { alert("Pallet " + id + " no encontrado."); }
+            } else { alert("No encontrado"); }
             this.value = '';
         }
     });
 
+    document.getElementById('nombreResponsable').addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmarResponsable(); });
+
     function confirmarResponsable() {
-        const nombre = document.getElementById('nombreResponsable').value.trim().toUpperCase();
-        if (!nombre) return alert("Ingrese un nombre");
-        auditorActual = nombre;
+        auditorActual = document.getElementById('nombreResponsable').value.trim().toUpperCase();
+        if (!auditorActual) return alert("Ingrese nombre");
         document.getElementById('modalPersona').style.display = 'none';
         renderizarPallet(palletTemporal, auditorActual);
     }
 
     function renderizarPallet(id, auditor) {
-        const area = document.getElementById('resultsArea');
         const body = document.getElementById('tableBody');
         const coincidencias = dbGlobal.filter(f => String(f.datos[0]).trim() === id);
-        area.style.display = 'block';
+        document.getElementById('resultsArea').style.display = 'block';
         document.getElementById('currentPalletTitle').innerText = `Pallet: ${id} | USUARIO: ${auditor}`;
         body.innerHTML = '';
 
         coincidencias.forEach(filaObj => {
             const tr = document.createElement('tr');
             if (filaObj.visto) tr.className = 'checked';
-            for (let i = 0; i < 6; i++) {
-                const td = document.createElement('td');
-                td.innerText = filaObj.datos[i] || '-';
-                tr.appendChild(td);
-            }
-            const tdAccion = document.createElement('td');
-            const btn = document.createElement('button');
-            btn.className = filaObj.visto ? 'btn-check undo' : 'btn-check';
-            btn.innerText = filaObj.visto ? `Visto por ${filaObj.auditor}` : 'Marcar Visto';
-            btn.onclick = () => {
-                if (filaObj.visto && filaObj.auditor !== auditor) {
-                    alert("Solo " + filaObj.auditor + " puede revertir esto.");
-                    return;
-                }
-                const newVisto = !filaObj.visto;
-                database.ref(`carga/items/${filaObj.rowId}`).update({
-                    visto: newVisto,
-                    auditor: newVisto ? auditor : "",
-                    fechaHora: newVisto ? new Date().toLocaleString() : ""
-                });
-            };
-            tdAccion.appendChild(btn);
-            tr.appendChild(tdAccion);
+            let html = filaObj.datos.slice(0,6).map(d => `<td>${d || '-'}</td>`).join('');
+            html += `<td><button class="btn-check ${filaObj.visto ? 'undo' : ''}" onclick="marcar('${filaObj.rowId}', ${filaObj.visto})">
+                ${filaObj.visto ? 'Visto por ' + filaObj.auditor : 'Marcar Visto'}</button></td>`;
+            tr.innerHTML = html;
             body.appendChild(tr);
         });
     }
 
+    function marcar(rowId, estado) {
+        database.ref(`carga/items/${rowId}`).update({
+            visto: !estado,
+            auditor: !estado ? auditorActual : "",
+            fechaHora: !estado ? new Date().toLocaleString() : ""
+        });
+    }
+
+    function prepararCabeceras() {
+        document.getElementById('tableHeaders').innerHTML = headers.map(h => `<th>${h || ''}</th>`).join('') + '<th>Estado</th>';
+    }
+
     function actualizarContadores() {
         const ids = [...new Set(dbGlobal.map(f => String(f.datos[0]).trim()))];
-        let pen = 0;
-        ids.forEach(id => {
-            if (dbGlobal.filter(f => String(f.datos[0]).trim() === id).some(f => !f.visto)) pen++;
-        });
         document.getElementById('totalPallets').innerText = ids.length;
-        document.getElementById('pendingPallets').innerText = pen;
         document.getElementById('totalItems').innerText = dbGlobal.filter(f => f.visto).length;
+        document.getElementById('pendingPallets').innerText = ids.filter(id => dbGlobal.filter(f => String(f.datos[0]).trim() === id).some(f => !f.visto)).length;
     }
 
     function exportarReporte() {
-        if (dbGlobal.length === 0) return alert("No hay datos.");
-        const datosExportar = dbGlobal.map(f => {
+        const datos = dbGlobal.map(f => {
             let item = {};
             headers.forEach((h, i) => item[h || `Dato${i+1}`] = f.datos[i]);
             item["ESTADO"] = f.visto ? "VISTO" : "PENDIENTE";
-            item["RESPONSABLE"] = f.auditor || "";
-            item["FECHA_HORA"] = f.fechaHora || "";
+            item["RESPONSABLE"] = f.auditor;
+            item["FECHA"] = f.fechaHora;
             return item;
         });
-        const ws = XLSX.utils.json_to_sheet(datosExportar);
+        const ws = XLSX.utils.json_to_sheet(datos);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Auditoria");
+        XLSX.utils.book_append_sheet(wb, ws, "Reporte");
         XLSX.writeFile(wb, "Reporte_Contenedor.xlsx");
     }
 </script>
