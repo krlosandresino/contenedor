@@ -15,33 +15,23 @@
         .stat-card { background: #fff; border: 1px solid #e1e4e8; padding: 15px; border-radius: 10px; text-align: center; }
         .stat-number { display: block; font-size: 24px; font-weight: bold; color: #2c3e50; }
         .stat-label { font-size: 12px; color: #7f8c8d; text-transform: uppercase; }
-        
         .upload-section { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; border: 1px solid #ddd; }
-        
         .btn-confirm { background-color: #34495e; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        
         input[type="text"] { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #bdc3c7; border-radius: 6px; font-size: 18px; box-sizing: border-box; }
-        
         .table-container { width: 100%; overflow-x: auto; margin-top: 10px; max-height: 500px; }
         table { width: 100%; border-collapse: collapse; }
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
-        /* Se añade z-index para evitar que el contenido sobresalga al hacer scroll */
         th { background-color: #3498db; color: white; position: sticky; top: 0; z-index: 10; }
-        
         tr.checked { background-color: #e8f5e9 !important; color: #2e7d32; }
         tr.checked td { text-decoration: line-through; opacity: 0.6; }
-        
         .btn-check { background-color: #2ecc71; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .btn-check.undo { background-color: #e74c3c; }
         .btn-locked { background-color: #95a5a6 !important; cursor: not-allowed; opacity: 0.8; pointer-events: none; }
-        
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; padding: 30px; border-radius: 12px; width: 400px; text-align: center; }
-
         .progress-container { grid-column: 1 / span 3; background: #eee; border-radius: 10px; height: 20px; position: relative; overflow: hidden; margin-bottom: 5px; border: 1px solid #ddd; }
         #progressBar { background: #27ae60; width: 0%; height: 100%; transition: width 0.5s ease; }
         #progressText { position: absolute; width: 100%; text-align: center; font-size: 11px; font-weight: bold; line-height: 20px; color: #2c3e50; top: 0; }
-        
         .btn-incident { background-color: #f39c12; color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 14px; margin-left: 5px; }
         tr.has-incident { border-left: 5px solid #e74c3c; background-color: #fff5f5 !important; }
         .incident-text { font-style: italic; color: #c0392b; font-size: 0.85em; display: block; margin-top: 4px; font-weight: bold; }
@@ -157,7 +147,13 @@
             const esAjenoVisto = filaObj.visto && filaObj.auditor !== auditorActual;
             const esAjenaIncidencia = filaObj.incidencia && filaObj.auditorIncidencia && filaObj.auditorIncidencia !== auditorActual;
             
-            let html = filaObj.datos.slice(0,6).map(d => `<td>${d || '-'}</td>`).join('');
+            // INDICES: 0:Pallet, 1:Codigo, 2:Boxes, 3:Units, 4:Units per box, 5:EAN
+            // NUEVO ORDEN: 0, 1, 2 (Boxes), 4 (Units per box), 3 (Units), 5
+            const d = filaObj.datos;
+            const indicesOrdenados = [0, 1, 2, 4, 3, 5];
+            
+            let html = indicesOrdenados.map(idx => `<td>${d[idx] || '-'}</td>`).join('');
+            
             html += `<td>
                 <button class="btn-check ${filaObj.visto ? 'undo' : ''} ${esAjenoVisto ? 'btn-locked' : ''}" 
                     onclick="marcar('${filaObj.rowId}')">
@@ -208,7 +204,9 @@
     }
 
     function prepararCabeceras() {
-        document.getElementById('tableHeaders').innerHTML = headers.map(h => `<th>${h || ''}</th>`).join('') + '<th>Acciones</th>';
+        const indicesOrdenados = [0, 1, 2, 4, 3, 5];
+        const hHTML = indicesOrdenados.map(idx => `<th>${headers[idx] || ''}</th>`).join('');
+        document.getElementById('tableHeaders').innerHTML = hHTML + '<th>Acciones</th>';
     }
 
     function actualizarContadores() {
