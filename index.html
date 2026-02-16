@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Revisión de carga</title>
+    <title>📝 Revisión de carga</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
     
     <style>
-        /* ESTILOS ORIGINALES */
         body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 95%; max-width: 1100px; }
         .dashboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
@@ -17,14 +16,11 @@
         .stat-number { display: block; font-size: 24px; font-weight: bold; color: #2c3e50; }
         .stat-label { font-size: 12px; color: #7f8c8d; text-transform: uppercase; }
         
-        .upload-section { background: #f8f9fa; padding: 15px; border-radius: 8px; border: 2px dashed #3498db; margin-bottom: 20px; text-align: center; }
-        .admin-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .upload-section { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; border: 1px solid #ddd; }
         
         .btn-confirm { background-color: #34495e; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-clear { background-color: #e74c3c; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .btn-download { background-color: #27ae60; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
         
-        input[type="text"], input[type="password"] { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #bdc3c7; border-radius: 6px; font-size: 18px; box-sizing: border-box; }
+        input[type="text"] { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #bdc3c7; border-radius: 6px; font-size: 18px; box-sizing: border-box; }
         
         .table-container { width: 100%; overflow-x: auto; margin-top: 10px; max-height: 500px; }
         table { width: 100%; border-collapse: collapse; }
@@ -52,17 +48,6 @@
 </head>
 <body>
 
-<div id="modalAdmin" class="modal-overlay">
-    <div class="modal-content">
-        <h3>🔐 Acceso Administrador</h3>
-        <p id="adminModalMsg">Solo personal autorizado.</p>
-        <input type="text" id="adminUser" placeholder="Usuario" autocomplete="off">
-        <input type="password" id="adminPass" placeholder="Contraseña" autocomplete="new-password">
-        <button class="btn-confirm" style="width:100%; margin-top:15px;" onclick="verificarAdmin()">Verificar Acceso</button>
-        <button onclick="cerrarModalAdmin()" style="background:none; border:none; color:gray; cursor:pointer; margin-top:10px;">Cancelar</button>
-    </div>
-</div>
-
 <div id="modalPersona" class="modal-overlay">
     <div class="modal-content">
         <h3>👤 Identificación</h3>
@@ -73,7 +58,7 @@
 </div>
 
 <div class="container">
-    <h2>Contenedor de carga</h2>
+    <h2>📝 Módulo de Revisión - Operaciones</h2>
     <div class="dashboard">
         <div class="progress-container">
             <div id="progressBar"></div>
@@ -84,15 +69,6 @@
         <div class="stat-card"><span class="stat-number" id="totalItems">0</span><span class="stat-label">Vistos Global</span></div>
     </div>
     
-    <div class="upload-section">
-        <div class="admin-controls">
-            <input type="file" id="fileInput" accept=".xlsx, .xls" style="display:none">
-            <button class="btn-confirm" onclick="abrirLoginAdmin('UPLOAD')">📂 Subir archivo excel</button>
-            <button class="btn-clear" onclick="abrirLoginAdmin('CLEAR')">🗑️ Limpiar base de Datos</button>
-        </div>
-        <button class="btn-download" onclick="exportarReporte()">📥 Descargar Reporte Final</button>
-    </div>
-
     <input type="text" id="palletInput" placeholder="Escanee número de Pallet..." autocomplete="off">
 
     <div id="resultsArea" style="display: none;">
@@ -124,7 +100,6 @@
     let headers = [];
     let palletTemporal = "";
     let auditorActual = "";
-    let adminAction = "";
 
     database.ref('carga').on('value', (snapshot) => {
         const data = snapshot.val();
@@ -135,52 +110,10 @@
             prepararCabeceras();
             if (palletTemporal) renderizarPallet(palletTemporal, auditorActual);
         } else {
-            dbGlobal = [];
-            headers = [];
+            dbGlobal = []; headers = [];
             actualizarContadores();
             document.getElementById('resultsArea').style.display = 'none';
         }
-    });
-
-    function abrirLoginAdmin(accion) {
-        adminAction = accion;
-        document.getElementById('adminUser').value = "";
-        document.getElementById('adminPass').value = "";
-        document.getElementById('modalAdmin').style.display = 'flex';
-        document.getElementById('adminUser').focus();
-    }
-
-    function cerrarModalAdmin() {
-        document.getElementById('modalAdmin').style.display = 'none';
-    }
-
-    // ENTER PARA ADMIN
-    [document.getElementById('adminUser'), document.getElementById('adminPass')].forEach(input => {
-        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') verificarAdmin(); });
-    });
-
-    function verificarAdmin() {
-        if (document.getElementById('adminUser').value === "oriflame" && document.getElementById('adminPass').value === "2026") {
-            cerrarModalAdmin();
-            if (adminAction === 'UPLOAD') document.getElementById('fileInput').click();
-            else if (confirm("¿Borrar todo?")) database.ref('carga').remove();
-        } else { alert("Datos incorrectos"); }
-    }
-
-    document.getElementById('fileInput').addEventListener('change', function(e) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const data = new Uint8Array(event.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const raw = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
-            if (raw.length > 0) {
-                const items = raw.slice(1).filter(f => f.length > 0).map((f, i) => ({
-                    datos: f, visto: false, auditor: "", fechaHora: "", rowId: i, incidencia: "", auditorIncidencia: ""
-                }));
-                database.ref('carga').set({ headers: raw[0].slice(0, 6), items: items });
-            }
-        };
-        reader.readAsArrayBuffer(e.target.files[0]);
     });
 
     document.getElementById('palletInput').addEventListener('keydown', function(e) {
@@ -192,12 +125,11 @@
                 document.getElementById('modalPersona').style.display = 'flex';
                 document.getElementById('nombreResponsable').value = "";
                 setTimeout(() => document.getElementById('nombreResponsable').focus(), 150);
-            } else { alert("No encontrado"); }
+            } else { alert("Pallet no encontrado en la base de datos."); }
             this.value = '';
         }
     });
 
-    // ENTER PARA RESPONSABLE (CORREGIDO)
     document.getElementById('nombreResponsable').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') confirmarResponsable();
     });
@@ -221,7 +153,6 @@
             if (filaObj.visto) tr.className = 'checked';
             if (filaObj.incidencia) tr.classList.add('has-incident');
             
-            // BLOQUEO SI ES DE OTRO USUARIO
             const esAjenoVisto = filaObj.visto && filaObj.auditor !== auditorActual;
             const esAjenaIncidencia = filaObj.incidencia && filaObj.auditorIncidencia && filaObj.auditorIncidencia !== auditorActual;
             
@@ -260,29 +191,23 @@
         const itemRef = database.ref(`carga/items/${rowId}`);
         itemRef.once('value', (snapshot) => {
             const itemData = snapshot.val();
-            // BLOQUEO DE SEGURIDAD
             if (itemData.incidencia && itemData.auditorIncidencia && itemData.auditorIncidencia !== auditorActual) {
                 alert("Esta incidencia pertenece a " + itemData.auditorIncidencia + ".");
                 return;
             }
-
             const motivo = prompt("Describa la incidencia:", itemData.incidencia || "");
             if (motivo !== null) {
                 if (motivo.trim() === "") {
                     itemRef.update({ incidencia: "", auditorIncidencia: "", fechaIncidencia: "" });
                 } else {
-                    itemRef.update({
-                        incidencia: motivo,
-                        auditorIncidencia: auditorActual,
-                        fechaIncidencia: new Date().toLocaleString()
-                    });
+                    itemRef.update({ incidencia: motivo, auditorIncidencia: auditorActual, fechaIncidencia: new Date().toLocaleString() });
                 }
             }
         });
     }
 
     function prepararCabeceras() {
-        document.getElementById('tableHeaders').innerHTML = headers.map(h => `<th>${h || ''}</th>`).join('') + '<th>Estado</th>';
+        document.getElementById('tableHeaders').innerHTML = headers.map(h => `<th>${h || ''}</th>`).join('') + '<th>Acciones</th>';
     }
 
     function actualizarContadores() {
@@ -297,23 +222,6 @@
         ).length;
         document.getElementById('progressBar').style.width = porcentaje + "%";
         document.getElementById('progressText').innerText = `${porcentaje}% COMPLETADO`;
-    }
-
-    function exportarReporte() {
-        const datos = dbGlobal.map(f => {
-            let item = {};
-            headers.forEach((h, i) => item[h || `Dato${i+1}`] = f.datos[i]);
-            item["ESTADO"] = f.visto ? "VISTO" : "PENDIENTE";
-            item["RESPONSABLE"] = f.auditor;
-            item["FECHA"] = f.fechaHora;
-            item["INCIDENCIA"] = f.incidencia || "";
-            item["QUIEN_REPORTA"] = f.auditorIncidencia || "";
-            return item;
-        });
-        const ws = XLSX.utils.json_to_sheet(datos);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Reporte");
-        XLSX.writeFile(wb, "Reporte_Contenedor.xlsx");
     }
 </script>
 </body>
