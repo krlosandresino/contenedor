@@ -25,7 +25,8 @@
         .table-container { width: 100%; overflow-x: auto; margin-top: 10px; max-height: 500px; }
         table { width: 100%; border-collapse: collapse; }
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
-        th { background-color: #3498db; color: white; position: sticky; top: 0; }
+        /* Se añade z-index para evitar que el contenido sobresalga al hacer scroll */
+        th { background-color: #3498db; color: white; position: sticky; top: 0; z-index: 10; }
         
         tr.checked { background-color: #e8f5e9 !important; color: #2e7d32; }
         tr.checked td { text-decoration: line-through; opacity: 0.6; }
@@ -66,7 +67,7 @@
         </div>
         <div class="stat-card"><span class="stat-number" id="totalPallets">0</span><span class="stat-label">Total Pallets</span></div>
         <div class="stat-card"><span class="stat-number" id="pendingPallets" style="color: #e67e22;">0</span><span class="stat-label">Faltan Buscar</span></div>
-        <div class="stat-card"><span class="stat-number" id="totalItems">0</span><span class="stat-label">Vistos Global</span></div>
+        <div class="stat-card"><span class="stat-number" id="totalItems">0</span><span class="stat-label">Vistos (códigos)</span></div>
     </div>
     
     <input type="text" id="palletInput" placeholder="Escanee número de Pallet..." autocomplete="off">
