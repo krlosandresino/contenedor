@@ -36,12 +36,11 @@
         
         .btn-check { background-color: #2ecc71; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .btn-check.undo { background-color: #e74c3c; }
-        .btn-locked { background-color: #95a5a6 !important; cursor: not-allowed; opacity: 0.8; }
+        .btn-locked { background-color: #95a5a6 !important; cursor: not-allowed; opacity: 0.8; pointer-events: none; }
         
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; padding: 30px; border-radius: 12px; width: 400px; text-align: center; }
 
-        /* NUEVOS ESTILOS: BARRA Y INCIDENCIAS */
         .progress-container { grid-column: 1 / span 3; background: #eee; border-radius: 10px; height: 20px; position: relative; overflow: hidden; margin-bottom: 5px; border: 1px solid #ddd; }
         #progressBar { background: #27ae60; width: 0%; height: 100%; transition: width 0.5s ease; }
         #progressText { position: absolute; width: 100%; text-align: center; font-size: 11px; font-weight: bold; line-height: 20px; color: #2c3e50; top: 0; }
@@ -80,7 +79,6 @@
             <div id="progressBar"></div>
             <span id="progressText">0% COMPLETADO</span>
         </div>
-
         <div class="stat-card"><span class="stat-number" id="totalPallets">0</span><span class="stat-label">Total Pallets</span></div>
         <div class="stat-card"><span class="stat-number" id="pendingPallets" style="color: #e67e22;">0</span><span class="stat-label">Faltan Buscar</span></div>
         <div class="stat-card"><span class="stat-number" id="totalItems">0</span><span class="stat-label">Vistos Global</span></div>
@@ -128,7 +126,6 @@
     let auditorActual = "";
     let adminAction = "";
 
-    // ESCUCHA DE DATOS
     database.ref('carga').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -149,17 +146,15 @@
         adminAction = accion;
         document.getElementById('adminUser').value = "";
         document.getElementById('adminPass').value = "";
-        document.getElementById('adminModalMsg').innerText = accion === 'CLEAR' ? "⚠️ Borrar todos los datos." : "Acceso autorizado.";
         document.getElementById('modalAdmin').style.display = 'flex';
         document.getElementById('adminUser').focus();
     }
 
     function cerrarModalAdmin() {
-        document.getElementById('adminUser').value = "";
-        document.getElementById('adminPass').value = "";
         document.getElementById('modalAdmin').style.display = 'none';
     }
 
+    // ENTER PARA ADMIN
     [document.getElementById('adminUser'), document.getElementById('adminPass')].forEach(input => {
         input.addEventListener('keydown', (e) => { if (e.key === 'Enter') verificarAdmin(); });
     });
@@ -180,7 +175,7 @@
             const raw = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
             if (raw.length > 0) {
                 const items = raw.slice(1).filter(f => f.length > 0).map((f, i) => ({
-                    datos: f, visto: false, auditor: "", fechaHora: "", rowId: i, incidencia: ""
+                    datos: f, visto: false, auditor: "", fechaHora: "", rowId: i, incidencia: "", auditorIncidencia: ""
                 }));
                 database.ref('carga').set({ headers: raw[0].slice(0, 6), items: items });
             }
@@ -202,7 +197,10 @@
         }
     });
 
-    document.getElementById('nombreResponsable').addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmarResponsable(); });
+    // ENTER PARA RESPONSABLE (CORREGIDO)
+    document.getElementById('nombreResponsable').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') confirmarResponsable();
+    });
 
     function confirmarResponsable() {
         auditorActual = document.getElementById('nombreResponsable').value.trim().toUpperCase();
@@ -223,31 +221,34 @@
             if (filaObj.visto) tr.className = 'checked';
             if (filaObj.incidencia) tr.classList.add('has-incident');
             
-            const esAjeno = filaObj.visto && filaObj.auditor !== auditorActual;
+            // BLOQUEO SI ES DE OTRO USUARIO
+            const esAjenoVisto = filaObj.visto && filaObj.auditor !== auditorActual;
+            const esAjenaIncidencia = filaObj.incidencia && filaObj.auditorIncidencia && filaObj.auditorIncidencia !== auditorActual;
             
             let html = filaObj.datos.slice(0,6).map(d => `<td>${d || '-'}</td>`).join('');
             html += `<td>
-                <button class="btn-check ${filaObj.visto ? 'undo' : ''} ${esAjeno ? 'btn-locked' : ''}" 
-                    onclick="marcar('${filaObj.rowId}', ${filaObj.visto})">
+                <button class="btn-check ${filaObj.visto ? 'undo' : ''} ${esAjenoVisto ? 'btn-locked' : ''}" 
+                    onclick="marcar('${filaObj.rowId}')">
                     ${filaObj.visto ? 'Visto por ' + filaObj.auditor : 'Marcar Visto'}
                 </button>
-                <button class="btn-incident" title="Reportar Incidencia" onclick="reportarIncidencia('${filaObj.rowId}')">⚠️</button>
-                ${filaObj.incidencia ? `<span class="incident-text">🚫 ${filaObj.incidencia}</span>` : ''}
+                <button class="btn-incident ${esAjenaIncidencia ? 'btn-locked' : ''}" 
+                    onclick="reportarIncidencia('${filaObj.rowId}')">⚠️</button>
+                ${filaObj.incidencia ? `<span class="incident-text">🚫 ${filaObj.incidencia} (${filaObj.auditorIncidencia})</span>` : ''}
             </td>`;
             tr.innerHTML = html;
             body.appendChild(tr);
         });
     }
 
-    function marcar(rowId, estado) {
+    function marcar(rowId) {
         const itemRef = database.ref(`carga/items/${rowId}`);
         itemRef.once('value', (snapshot) => {
             const itemData = snapshot.val();
+            if (itemData.visto && itemData.auditor !== auditorActual) {
+                alert("No puedes modificar un pallet revisado por otra persona.");
+                return;
+            }
             if (itemData.visto) {
-                if (itemData.auditor !== auditorActual) {
-                    alert("No puedes modificar un pallet revisado por otra persona.");
-                    return;
-                }
                 itemRef.update({ visto: false, auditor: "", fechaHora: "" });
             } else {
                 itemRef.update({ visto: true, auditor: auditorActual, fechaHora: new Date().toLocaleString() });
@@ -256,14 +257,28 @@
     }
 
     function reportarIncidencia(rowId) {
-        const motivo = prompt("Describa la incidencia (ej: Caja dañada, falta producto):");
-        if (motivo !== null) {
-            database.ref(`carga/items/${rowId}`).update({
-                incidencia: motivo,
-                auditorIncidencia: auditorActual,
-                fechaIncidencia: new Date().toLocaleString()
-            });
-        }
+        const itemRef = database.ref(`carga/items/${rowId}`);
+        itemRef.once('value', (snapshot) => {
+            const itemData = snapshot.val();
+            // BLOQUEO DE SEGURIDAD
+            if (itemData.incidencia && itemData.auditorIncidencia && itemData.auditorIncidencia !== auditorActual) {
+                alert("Esta incidencia pertenece a " + itemData.auditorIncidencia + ".");
+                return;
+            }
+
+            const motivo = prompt("Describa la incidencia:", itemData.incidencia || "");
+            if (motivo !== null) {
+                if (motivo.trim() === "") {
+                    itemRef.update({ incidencia: "", auditorIncidencia: "", fechaIncidencia: "" });
+                } else {
+                    itemRef.update({
+                        incidencia: motivo,
+                        auditorIncidencia: auditorActual,
+                        fechaIncidencia: new Date().toLocaleString()
+                    });
+                }
+            }
+        });
     }
 
     function prepararCabeceras() {
@@ -275,14 +290,11 @@
         const totalItems = dbGlobal.length;
         const itemsVistos = dbGlobal.filter(f => f.visto).length;
         const porcentaje = totalItems > 0 ? Math.round((itemsVistos / totalItems) * 100) : 0;
-
         document.getElementById('totalPallets').innerText = ids.length;
         document.getElementById('totalItems').innerText = itemsVistos;
         document.getElementById('pendingPallets').innerText = ids.filter(id => 
             dbGlobal.filter(f => String(f.datos[0]).trim() === id).some(f => !f.visto)
         ).length;
-
-        // ACTUALIZAR BARRA
         document.getElementById('progressBar').style.width = porcentaje + "%";
         document.getElementById('progressText').innerText = `${porcentaje}% COMPLETADO`;
     }
@@ -295,6 +307,7 @@
             item["RESPONSABLE"] = f.auditor;
             item["FECHA"] = f.fechaHora;
             item["INCIDENCIA"] = f.incidencia || "";
+            item["QUIEN_REPORTA"] = f.auditorIncidencia || "";
             return item;
         });
         const ws = XLSX.utils.json_to_sheet(datos);
