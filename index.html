@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
     
     <style>
-        /* ESTILOS ORIGINALES RECUPERADOS */
+        /* ESTILOS ORIGINALES */
         body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 95%; max-width: 1100px; }
         .dashboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
@@ -20,28 +20,35 @@
         .upload-section { background: #f8f9fa; padding: 15px; border-radius: 8px; border: 2px dashed #3498db; margin-bottom: 20px; text-align: center; }
         .admin-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
         
-        /* BOTONES CON COLORES ORIGINALES */
         .btn-confirm { background-color: #34495e; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-clear { background-color: #e74c3c; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-download { background-color: #27ae60; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
         
         input[type="text"], input[type="password"] { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #bdc3c7; border-radius: 6px; font-size: 18px; box-sizing: border-box; }
         
-        /* TABLAS Y MODALES */
         .table-container { width: 100%; overflow-x: auto; margin-top: 10px; max-height: 500px; }
         table { width: 100%; border-collapse: collapse; }
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
         th { background-color: #3498db; color: white; position: sticky; top: 0; }
         
-        /* ESTILO DE FILA MARCADA (TACHADO Y VERDE) */
         tr.checked { background-color: #e8f5e9 !important; color: #2e7d32; }
         tr.checked td { text-decoration: line-through; opacity: 0.6; }
         
         .btn-check { background-color: #2ecc71; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .btn-check.undo { background-color: #e74c3c; }
+        .btn-locked { background-color: #95a5a6 !important; cursor: not-allowed; opacity: 0.8; }
         
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; padding: 30px; border-radius: 12px; width: 400px; text-align: center; }
+
+        /* NUEVOS ESTILOS: BARRA Y INCIDENCIAS */
+        .progress-container { grid-column: 1 / span 3; background: #eee; border-radius: 10px; height: 20px; position: relative; overflow: hidden; margin-bottom: 5px; border: 1px solid #ddd; }
+        #progressBar { background: #27ae60; width: 0%; height: 100%; transition: width 0.5s ease; }
+        #progressText { position: absolute; width: 100%; text-align: center; font-size: 11px; font-weight: bold; line-height: 20px; color: #2c3e50; top: 0; }
+        
+        .btn-incident { background-color: #f39c12; color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 14px; margin-left: 5px; }
+        tr.has-incident { border-left: 5px solid #e74c3c; background-color: #fff5f5 !important; }
+        .incident-text { font-style: italic; color: #c0392b; font-size: 0.85em; display: block; margin-top: 4px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -69,6 +76,11 @@
 <div class="container">
     <h2>Contenedor de carga</h2>
     <div class="dashboard">
+        <div class="progress-container">
+            <div id="progressBar"></div>
+            <span id="progressText">0% COMPLETADO</span>
+        </div>
+
         <div class="stat-card"><span class="stat-number" id="totalPallets">0</span><span class="stat-label">Total Pallets</span></div>
         <div class="stat-card"><span class="stat-number" id="pendingPallets" style="color: #e67e22;">0</span><span class="stat-label">Faltan Buscar</span></div>
         <div class="stat-card"><span class="stat-number" id="totalItems">0</span><span class="stat-label">Vistos Global</span></div>
@@ -133,7 +145,6 @@
         }
     });
 
-    // LÓGICA DE ADMIN Y TECLADO
     function abrirLoginAdmin(accion) {
         adminAction = accion;
         document.getElementById('adminUser').value = "";
@@ -161,7 +172,6 @@
         } else { alert("Datos incorrectos"); }
     }
 
-    // CARGA DE EXCEL
     document.getElementById('fileInput').addEventListener('change', function(e) {
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -170,7 +180,7 @@
             const raw = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
             if (raw.length > 0) {
                 const items = raw.slice(1).filter(f => f.length > 0).map((f, i) => ({
-                    datos: f, visto: false, auditor: "", fechaHora: "", rowId: i
+                    datos: f, visto: false, auditor: "", fechaHora: "", rowId: i, incidencia: ""
                 }));
                 database.ref('carga').set({ headers: raw[0].slice(0, 6), items: items });
             }
@@ -178,7 +188,6 @@
         reader.readAsArrayBuffer(e.target.files[0]);
     });
 
-    // BÚSQUEDA Y RENDERIZADO
     document.getElementById('palletInput').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             const id = this.value.trim();
@@ -212,20 +221,49 @@
         coincidencias.forEach(filaObj => {
             const tr = document.createElement('tr');
             if (filaObj.visto) tr.className = 'checked';
+            if (filaObj.incidencia) tr.classList.add('has-incident');
+            
+            const esAjeno = filaObj.visto && filaObj.auditor !== auditorActual;
+            
             let html = filaObj.datos.slice(0,6).map(d => `<td>${d || '-'}</td>`).join('');
-            html += `<td><button class="btn-check ${filaObj.visto ? 'undo' : ''}" onclick="marcar('${filaObj.rowId}', ${filaObj.visto})">
-                ${filaObj.visto ? 'Visto por ' + filaObj.auditor : 'Marcar Visto'}</button></td>`;
+            html += `<td>
+                <button class="btn-check ${filaObj.visto ? 'undo' : ''} ${esAjeno ? 'btn-locked' : ''}" 
+                    onclick="marcar('${filaObj.rowId}', ${filaObj.visto})">
+                    ${filaObj.visto ? 'Visto por ' + filaObj.auditor : 'Marcar Visto'}
+                </button>
+                <button class="btn-incident" title="Reportar Incidencia" onclick="reportarIncidencia('${filaObj.rowId}')">⚠️</button>
+                ${filaObj.incidencia ? `<span class="incident-text">🚫 ${filaObj.incidencia}</span>` : ''}
+            </td>`;
             tr.innerHTML = html;
             body.appendChild(tr);
         });
     }
 
     function marcar(rowId, estado) {
-        database.ref(`carga/items/${rowId}`).update({
-            visto: !estado,
-            auditor: !estado ? auditorActual : "",
-            fechaHora: !estado ? new Date().toLocaleString() : ""
+        const itemRef = database.ref(`carga/items/${rowId}`);
+        itemRef.once('value', (snapshot) => {
+            const itemData = snapshot.val();
+            if (itemData.visto) {
+                if (itemData.auditor !== auditorActual) {
+                    alert("No puedes modificar un pallet revisado por otra persona.");
+                    return;
+                }
+                itemRef.update({ visto: false, auditor: "", fechaHora: "" });
+            } else {
+                itemRef.update({ visto: true, auditor: auditorActual, fechaHora: new Date().toLocaleString() });
+            }
         });
+    }
+
+    function reportarIncidencia(rowId) {
+        const motivo = prompt("Describa la incidencia (ej: Caja dañada, falta producto):");
+        if (motivo !== null) {
+            database.ref(`carga/items/${rowId}`).update({
+                incidencia: motivo,
+                auditorIncidencia: auditorActual,
+                fechaIncidencia: new Date().toLocaleString()
+            });
+        }
     }
 
     function prepararCabeceras() {
@@ -234,9 +272,19 @@
 
     function actualizarContadores() {
         const ids = [...new Set(dbGlobal.map(f => String(f.datos[0]).trim()))];
+        const totalItems = dbGlobal.length;
+        const itemsVistos = dbGlobal.filter(f => f.visto).length;
+        const porcentaje = totalItems > 0 ? Math.round((itemsVistos / totalItems) * 100) : 0;
+
         document.getElementById('totalPallets').innerText = ids.length;
-        document.getElementById('totalItems').innerText = dbGlobal.filter(f => f.visto).length;
-        document.getElementById('pendingPallets').innerText = ids.filter(id => dbGlobal.filter(f => String(f.datos[0]).trim() === id).some(f => !f.visto)).length;
+        document.getElementById('totalItems').innerText = itemsVistos;
+        document.getElementById('pendingPallets').innerText = ids.filter(id => 
+            dbGlobal.filter(f => String(f.datos[0]).trim() === id).some(f => !f.visto)
+        ).length;
+
+        // ACTUALIZAR BARRA
+        document.getElementById('progressBar').style.width = porcentaje + "%";
+        document.getElementById('progressText').innerText = `${porcentaje}% COMPLETADO`;
     }
 
     function exportarReporte() {
@@ -246,6 +294,7 @@
             item["ESTADO"] = f.visto ? "VISTO" : "PENDIENTE";
             item["RESPONSABLE"] = f.auditor;
             item["FECHA"] = f.fechaHora;
+            item["INCIDENCIA"] = f.incidencia || "";
             return item;
         });
         const ws = XLSX.utils.json_to_sheet(datos);
