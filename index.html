@@ -3,225 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📝 Revisión de carga</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.1/firebase-database-compat.js"></script>
-    
+    <title>🛠️ REVISION CONTENEDOR</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 95%; max-width: 1100px; }
-        .dashboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: #fff; border: 1px solid #e1e4e8; padding: 15px; border-radius: 10px; text-align: center; }
-        .stat-number { display: block; font-size: 24px; font-weight: bold; color: #2c3e50; }
-        .stat-label { font-size: 12px; color: #7f8c8d; text-transform: uppercase; }
-        .upload-section { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; border: 1px solid #ddd; }
-        .btn-confirm { background-color: #34495e; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        input[type="text"] { width: 100%; padding: 15px; margin: 10px 0; border: 2px solid #bdc3c7; border-radius: 6px; font-size: 18px; box-sizing: border-box; }
-        .table-container { width: 100%; overflow-x: auto; margin-top: 10px; max-height: 500px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
-        th { background-color: #3498db; color: white; position: sticky; top: 0; z-index: 10; }
-        tr.checked { background-color: #e8f5e9 !important; color: #2e7d32; }
-        tr.checked td { text-decoration: line-through; opacity: 0.6; }
-        .btn-check { background-color: #2ecc71; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .btn-check.undo { background-color: #e74c3c; }
-        .btn-locked { background-color: #95a5a6 !important; cursor: not-allowed; opacity: 0.8; pointer-events: none; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 400px; text-align: center; }
-        .progress-container { grid-column: 1 / span 3; background: #eee; border-radius: 10px; height: 20px; position: relative; overflow: hidden; margin-bottom: 5px; border: 1px solid #ddd; }
-        #progressBar { background: #27ae60; width: 0%; height: 100%; transition: width 0.5s ease; }
-        #progressText { position: absolute; width: 100%; text-align: center; font-size: 11px; font-weight: bold; line-height: 20px; color: #2c3e50; top: 0; }
-        .btn-incident { background-color: #f39c12; color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 14px; margin-left: 5px; }
-        tr.has-incident { border-left: 5px solid #e74c3c; background-color: #fff5f5 !important; }
-        .incident-text { font-style: italic; color: #c0392b; font-size: 0.85em; display: block; margin-top: 4px; font-weight: bold; }
+        :root {
+            --primary: #2563eb;
+            --secondary: #64748b;
+            --dark: #0f172a;
+            --bg: #f8fafc;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--dark);
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 { font-size: 2.5rem; margin-bottom: 10px; color: var(--dark); }
+        p { color: var(--secondary); font-size: 1.1rem; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.1);
+        }
+
+        .icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .card span {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--primary);
+        }
+
+        footer {
+            margin-top: 60px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--secondary);
+        }
     </style>
 </head>
 <body>
 
-<div id="modalPersona" class="modal-overlay">
-    <div class="modal-content">
-        <h3>👤 Identificación</h3>
-        <p>Responsable para el <b>Pallet <span id="modalPalletId"></span></b>:</p>
-        <input type="text" id="nombreResponsable" placeholder="Escriba su nombre y pulse Enter..." autocomplete="off" style="text-transform: uppercase;">
-        <button class="btn-confirm" style="width:100%; margin-top:15px;" onclick="confirmarResponsable()">Continuar</button>
-    </div>
-</div>
-
 <div class="container">
-    <h2>📝 Módulo de Revisión - Operaciones</h2>
-    <div class="dashboard">
-        <div class="progress-container">
-            <div id="progressBar"></div>
-            <span id="progressText">0% COMPLETADO</span>
-        </div>
-        <div class="stat-card"><span class="stat-number" id="totalPallets">0</span><span class="stat-label">Total Pallets</span></div>
-        <div class="stat-card"><span class="stat-number" id="pendingPallets" style="color: #e67e22;">0</span><span class="stat-label">Faltan Buscar</span></div>
-        <div class="stat-card"><span class="stat-number" id="totalItems">0</span><span class="stat-label">Vistos (códigos)</span></div>
-    </div>
-    
-    <input type="text" id="palletInput" placeholder="Escanee número de Pallet..." autocomplete="off">
+    <header>
+        <h1>Revisión de Carga</h1>
+        <p>Control administrativo</p>
+    </header>
 
-    <div id="resultsArea" style="display: none;">
-        <h3 id="currentPalletTitle"></h3>
-        <div class="table-container">
-            <table>
-                <thead><tr id="tableHeaders"></tr></thead>
-                <tbody id="tableBody"></tbody>
-            </table>
-        </div>
+    <div class="grid">
+        <a href="admin.html" class="card">
+            <div class="icon">🗄️</div>
+            <span>Administrador</span>
+        </a>
+
+        <a href="Contenedor.html" class="card">
+            <div class="icon">🚚</div>
+            <span>CONTENEDOR</span>
+        </a>
+
+        
+       
+
     </div>
+
+    <footer>
+        &copy; 2026 Creado por Carlos Burgos
+    </footer>
 </div>
 
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyBj-XjFkKnbl-f5IVCXymfaPACK2ZwPrXo",
-        authDomain: "pcontenedor-83239.firebaseapp.com",
-        databaseURL: "https://pcontenedor-83239-default-rtdb.firebaseio.com",
-        projectId: "pcontenedor-83239",
-        storageBucket: "pcontenedor-83239.firebasestorage.app",
-        messagingSenderId: "517861302737",
-        appId: "1:517861302737:web:2c6e7b97062dbf7e6900f0"
-    };
-
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-
-    let dbGlobal = [];
-    let headers = [];
-    let palletTemporal = "";
-    let auditorActual = "";
-
-    database.ref('carga').on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            dbGlobal = data.items || [];
-            headers = data.headers || [];
-            actualizarContadores();
-            prepararCabeceras();
-            if (palletTemporal) renderizarPallet(palletTemporal, auditorActual);
-        } else {
-            dbGlobal = []; headers = [];
-            actualizarContadores();
-            document.getElementById('resultsArea').style.display = 'none';
-        }
-    });
-
-    document.getElementById('palletInput').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            const id = this.value.trim();
-            if (dbGlobal.some(f => String(f.datos[0]).trim() === id)) {
-                palletTemporal = id;
-                document.getElementById('modalPalletId').innerText = id;
-                document.getElementById('modalPersona').style.display = 'flex';
-                document.getElementById('nombreResponsable').value = "";
-                setTimeout(() => document.getElementById('nombreResponsable').focus(), 150);
-            } else { alert("Pallet no encontrado en la base de datos."); }
-            this.value = '';
-        }
-    });
-
-    document.getElementById('nombreResponsable').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') confirmarResponsable();
-    });
-
-    function confirmarResponsable() {
-        auditorActual = document.getElementById('nombreResponsable').value.trim().toUpperCase();
-        if (!auditorActual) return alert("Ingrese nombre");
-        document.getElementById('modalPersona').style.display = 'none';
-        renderizarPallet(palletTemporal, auditorActual);
-    }
-
-    function renderizarPallet(id, auditor) {
-        const body = document.getElementById('tableBody');
-        const coincidencias = dbGlobal.filter(f => String(f.datos[0]).trim() === id);
-        document.getElementById('resultsArea').style.display = 'block';
-        document.getElementById('currentPalletTitle').innerText = `Pallet: ${id} | USUARIO: ${auditor}`;
-        body.innerHTML = '';
-
-        coincidencias.forEach(filaObj => {
-            const tr = document.createElement('tr');
-            if (filaObj.visto) tr.className = 'checked';
-            if (filaObj.incidencia) tr.classList.add('has-incident');
-            
-            const esAjenoVisto = filaObj.visto && filaObj.auditor !== auditorActual;
-            const esAjenaIncidencia = filaObj.incidencia && filaObj.auditorIncidencia && filaObj.auditorIncidencia !== auditorActual;
-            
-            // INDICES: 0:Pallet, 1:Codigo, 2:Boxes, 3:Units, 4:Units per box, 5:EAN
-            // NUEVO ORDEN: 0, 1, 2 (Boxes), 4 (Units per box), 3 (Units), 5
-            const d = filaObj.datos;
-            const indicesOrdenados = [0, 1, 2, 4, 3, 5];
-            
-            let html = indicesOrdenados.map(idx => `<td>${d[idx] || '-'}</td>`).join('');
-            
-            html += `<td>
-                <button class="btn-check ${filaObj.visto ? 'undo' : ''} ${esAjenoVisto ? 'btn-locked' : ''}" 
-                    onclick="marcar('${filaObj.rowId}')">
-                    ${filaObj.visto ? 'Visto por ' + filaObj.auditor : 'Marcar Visto'}
-                </button>
-                <button class="btn-incident ${esAjenaIncidencia ? 'btn-locked' : ''}" 
-                    onclick="reportarIncidencia('${filaObj.rowId}')">⚠️</button>
-                ${filaObj.incidencia ? `<span class="incident-text">🚫 ${filaObj.incidencia} (${filaObj.auditorIncidencia})</span>` : ''}
-            </td>`;
-            tr.innerHTML = html;
-            body.appendChild(tr);
-        });
-    }
-
-    function marcar(rowId) {
-        const itemRef = database.ref(`carga/items/${rowId}`);
-        itemRef.once('value', (snapshot) => {
-            const itemData = snapshot.val();
-            if (itemData.visto && itemData.auditor !== auditorActual) {
-                alert("No puedes modificar un pallet revisado por otra persona.");
-                return;
-            }
-            if (itemData.visto) {
-                itemRef.update({ visto: false, auditor: "", fechaHora: "" });
-            } else {
-                itemRef.update({ visto: true, auditor: auditorActual, fechaHora: new Date().toLocaleString() });
-            }
-        });
-    }
-
-    function reportarIncidencia(rowId) {
-        const itemRef = database.ref(`carga/items/${rowId}`);
-        itemRef.once('value', (snapshot) => {
-            const itemData = snapshot.val();
-            if (itemData.incidencia && itemData.auditorIncidencia && itemData.auditorIncidencia !== auditorActual) {
-                alert("Esta incidencia pertenece a " + itemData.auditorIncidencia + ".");
-                return;
-            }
-            const motivo = prompt("Describa la incidencia:", itemData.incidencia || "");
-            if (motivo !== null) {
-                if (motivo.trim() === "") {
-                    itemRef.update({ incidencia: "", auditorIncidencia: "", fechaIncidencia: "" });
-                } else {
-                    itemRef.update({ incidencia: motivo, auditorIncidencia: auditorActual, fechaIncidencia: new Date().toLocaleString() });
-                }
-            }
-        });
-    }
-
-    function prepararCabeceras() {
-        const indicesOrdenados = [0, 1, 2, 4, 3, 5];
-        const hHTML = indicesOrdenados.map(idx => `<th>${headers[idx] || ''}</th>`).join('');
-        document.getElementById('tableHeaders').innerHTML = hHTML + '<th>Acciones</th>';
-    }
-
-    function actualizarContadores() {
-        const ids = [...new Set(dbGlobal.map(f => String(f.datos[0]).trim()))];
-        const totalItems = dbGlobal.length;
-        const itemsVistos = dbGlobal.filter(f => f.visto).length;
-        const porcentaje = totalItems > 0 ? Math.round((itemsVistos / totalItems) * 100) : 0;
-        document.getElementById('totalPallets').innerText = ids.length;
-        document.getElementById('totalItems').innerText = itemsVistos;
-        document.getElementById('pendingPallets').innerText = ids.filter(id => 
-            dbGlobal.filter(f => String(f.datos[0]).trim() === id).some(f => !f.visto)
-        ).length;
-        document.getElementById('progressBar').style.width = porcentaje + "%";
-        document.getElementById('progressText').innerText = `${porcentaje}% COMPLETADO`;
-    }
-</script>
 </body>
 </html>
