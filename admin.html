@@ -106,6 +106,15 @@
 </div>
 
 <script>
+    // --- BLOQUEO DE SEGURIDAD ---
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.onkeydown = function(e) {
+        if (e.keyCode == 123) return false;
+        if (e.ctrlKey && e.keyCode == 85) return false;
+        if (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) return false;
+        if (e.ctrlKey && e.keyCode == 83) return false;
+    };
+
     const firebaseConfig = {
         apiKey: "AIzaSyBj-XjFkKnbl-f5IVCXymfaPACK2ZwPrXo",
         authDomain: "pcontenedor-83239.firebaseapp.com",
@@ -188,7 +197,6 @@
 
             const tr = document.createElement('tr');
             const d = item.datos;
-            // Solo para mostrar Pallet y Código en la tabla de monitoreo
             tr.innerHTML = `
                 <td><b>${d[0]}</b></td>
                 <td>${d[1] || '-'}</td>
@@ -270,14 +278,11 @@
         if (dbGlobal.length === 0) return alert("No hay datos");
         const excelData = dbGlobal.map(f => {
             let item = {};
-            // REORDENAMIENTO EXCEL: 0, 1, 2 (Boxes), 4 (Units per box), 3 (Units), 5
             const indicesOrdenados = [0, 1, 2, 4, 3, 5];
-            
             indicesOrdenados.forEach((idx) => {
                 const h = headersGlobal[idx] || `Columna_${idx}`;
                 item[h] = f.datos[idx];
             });
-            
             item["ESTADO"] = f.visto ? "VISTO" : "PENDIENTE";
             item["RESPONSABLE"] = f.auditor;
             item["FECHA"] = f.fechaHora;

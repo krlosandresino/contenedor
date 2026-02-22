@@ -74,6 +74,15 @@
 </div>
 
 <script>
+    // --- BLOQUEO DE SEGURIDAD ---
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.onkeydown = function(e) {
+        if (e.keyCode == 123) return false;
+        if (e.ctrlKey && e.keyCode == 85) return false;
+        if (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) return false;
+        if (e.ctrlKey && e.keyCode == 83) return false;
+    };
+
     const firebaseConfig = {
         apiKey: "AIzaSyBj-XjFkKnbl-f5IVCXymfaPACK2ZwPrXo",
         authDomain: "pcontenedor-83239.firebaseapp.com",
@@ -147,8 +156,6 @@
             const esAjenoVisto = filaObj.visto && filaObj.auditor !== auditorActual;
             const esAjenaIncidencia = filaObj.incidencia && filaObj.auditorIncidencia && filaObj.auditorIncidencia !== auditorActual;
             
-            // INDICES: 0:Pallet, 1:Codigo, 2:Boxes, 3:Units, 4:Units per box, 5:EAN
-            // NUEVO ORDEN: 0, 1, 2 (Boxes), 4 (Units per box), 3 (Units), 5
             const d = filaObj.datos;
             const indicesOrdenados = [0, 1, 2, 4, 3, 5];
             
