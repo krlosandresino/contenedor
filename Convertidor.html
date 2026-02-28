@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Conversor PDF contenedor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f3f4f6; padding: 20px; }
+        .container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #111827; padding-bottom: 15px; margin-bottom: 20px; }
+        button { cursor: pointer; padding: 10px 20px; background: #059669; color: white; border: none; font-weight: bold; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th { background: #111827; color: white; padding: 10px; border: 1px solid #374151; }
+        td { padding: 8px; border: 1px solid #d1d5db; }
+        .pallet-cell { background: #f9fafb; font-weight: bold; color: #b91c1c; }
+        .desc-cell { color: #2563eb; font-weight: bold; }
+        .num-cell { text-align: center; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>Extractor de PDF (contenedor)</h2>
+        <div>
+            <input type="file" id="fileInput" accept=".pdf" multiple>
+            <button onclick="exportToExcel()">Descargar Excel</button>
+        </div>
+    </div>
+    
+    <table id="mainTable">
+        <thead>
+            <tr>
+                <th>SSCC pallet number</th>
+                <th>Item</th>
+                <th>Description</th>
+                <th>Boxes</th>
+                <th>Units</th>
+                <th>Units per box</th>
+                <th>Net Weight</th>
+                <th>Expiry Date</th>
+                <th>COO</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+const fileInput = document.getElementById('fileInput');
+const tableBody = document.getElementById('tableBody');
+
+fileInput.addEventListener('change', async (e) => {
+    const files = e.target.files;
+    tableBody.innerHTML = "";
+    
+    for (const file of files) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let currentSSCC = "N/A";
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            
+            let lines = {};
+            textContent.items.forEach(item => {
+                let y = Math.round(item.transform[5]);
+                let foundY = Object.keys(lines).find(key => Math.abs(key - y) <= 4);
+                let targetY = foundY || y;
+                if (!lines[targetY]) lines[targetY] = [];
+                lines[targetY].push({ x: item.transform[4], str: item.str.trim() });
+            });
+
+            let sortedY = Object.keys(lines).sort((a, b) => b - a);
+            
+            sortedY.forEach(y => {
+                let row = lines[y].sort((a, b) => a.x - b.x).filter(r => r.str !== "");
+                let fullText = row.map(r => r.str).join(" ");
+
+                const ssccRegex = /(M|FL)\s*(\d{15,20})/i;
+                if (ssccRegex.test(fullText)) {
+                    let match = fullText.match(ssccRegex);
+                    currentSSCC = match[1] + " " + match[2];
+                    return; 
+                }
+
+                if (row.length > 2 && /^\d{5,}\.\d+/.test(row[0].str)) {
+                    let itemID = row[0].str;
+                    let coo = "", expiry = "", weight = "", ubox = "", units = "", boxes = "";
+                    
+                    let tempRow = [...row];
+                    tempRow.shift(); 
+
+                    if (tempRow.length > 0) coo = tempRow.pop().str;
+
+                    if (tempRow.length > 0) {
+                        let val = tempRow[tempRow.length - 1].str;
+                        if (/^\d{8}$/.test(val)) expiry = tempRow.pop().str;
+                    }
+
+                    let nums = [];
+                    while (tempRow.length > 0 && /^[\d\.,]+$/.test(tempRow[tempRow.length - 1].str)) {
+                        nums.push(tempRow.pop().str);
+                    }
+
+                    weight = nums[0] || "";
+                    ubox = nums[1] || "";
+                    units = nums[2] || "";
+                    boxes = nums[3] || "";
+
+                    let description = tempRow.map(r => r.str).join(" ").trim();
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="pallet-cell">${currentSSCC}</td>
+                        <td>${itemID}</td>
+                        <td class="desc-cell">${description}</td>
+                        <td class="num-cell">${boxes}</td>
+                        <td class="num-cell">${units}</td>
+                        <td class="num-cell">${ubox}</td>
+                        <td class="num-cell">${weight}</td>
+                        <td>${expiry}</td>
+                        <td>${coo}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                }
+            });
+        }
+    }
+});
+
+function exportToExcel() {
+    const table = document.getElementById("mainTable");
+    
+    // 1. Creamos la hoja de cálculo
+    const ws = XLSX.utils.table_to_sheet(table);
+    
+    // 2. CORRECCIÓN CLAVE: Recorremos todas las celdas de la hoja
+    // Si la celda existe, forzamos que su tipo sea 's' (string/texto)
+    // Esto evita que Excel use su configuración regional para cambiar puntos por comas.
+    for (let cell in ws) {
+        if (cell[0] === '!') continue; // Ignorar metadatos de la hoja
+        
+        // Forzamos tipo texto para todas las celdas que no sean encabezados
+        // o específicamente para las columnas de Item (B) y Weight (G)
+        ws[cell].t = 's'; 
+    }
+
+    // 3. Creamos el libro y guardamos
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Packing_List");
+    XLSX.writeFile(wb, "Packing_List.xlsx");
+}
+</script>
+</body>
+</html>
